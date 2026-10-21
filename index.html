@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+
+<html lang="vi">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width,initial-scale=1" name="viewport"/>
+<title>Đăng ký phòng chuyến đi công ty / Company Trip Room Booking</title>
+<style>
+:root{ --accent:#c20000; --muted:#6b6b6b; --card:#fff; }
+body{ font-family:"Segoe UI",Roboto,Arial,sans-serif; background:#f3f4f6; margin:0; color:#222; }
+header{ display:flex; align-items:center; justify-content:center; gap:16px; background:white; padding:16px 20px; box-shadow:0 1px 4px rgba(0,0,0,0.06); position:sticky; top:0; z-index:10; }
+header .left{ position:absolute; left:20px; }
+header img{ height:48px; display:block; }
+header h1{ margin:0; color:var(--accent); font-size:22px; font-weight:700; }
+
+.controls{ max-width:1100px; margin:18px auto 0; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:0 16px; }
+.stats{ font-size:15px; color:var(--muted); }
+button.primary{ background:var(--accent); color:white; border:none; padding:8px 12px; border-radius:8px; cursor:pointer; font-weight:600; }
+button.ghost{ background:transparent; border:1px solid #ddd; padding:7px 10px; border-radius:8px; cursor:pointer; }
+
+.sections-wrap{
+  max-width:1400px; /* nới tổng khung */
+  margin:18px auto 90px;
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); /* cột rộng hơn */
+  gap:24px;
+  padding:0 24px;
+  box-sizing:border-box;
+}
+.section{ background:white; border-radius:12px; padding:12px; box-shadow:0 6px 18px rgba(0,0,0,0.04); }
+.section .header{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:10px; }
+.section h2{ margin:0; color:var(--accent); font-size:16px; }
+.section .controls-inline{ display:flex; gap:8px; align-items:center; }
+
+.room-grid{
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); /* ✅ mỗi hàng có 2 phòng */
+  gap: 16px;
+}
+.room-card{ background:var(--card); border-radius:10px; padding:10px; box-shadow:0 6px 18px rgba(0,0,0,0.06); text-align:center; border:2px solid transparent; cursor:pointer; transition:transform .12s ease,border-color .12s; }
+.room-card:hover{ transform:translateY(-4px); border-color:#e6e6e6; }
+.room-card.locked{ opacity:0.75; cursor:not-allowed; border-color:#f4cccc; background:#fff6f6; }
+.room-icon{ font-size:34px; margin-bottom:6px; }
+.room-name{ font-weight:700; margin-bottom:6px; font-size:14px; color:#111; }
+.room-occupants{ font-size:13px; color:var(--muted); min-height:28px; line-height:1.2; }
+
+.modal{ display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); align-items:center; justify-content:center; z-index:50; padding:20px; }
+.modal.open{ display:flex; }
+.modal-panel{ width:420px; max-width:92%; background:white; border-radius:12px; padding:18px; box-shadow:0 12px 36px rgba(0,0,0,0.18); text-align:left; }
+.modal-panel h3{ margin:0 0 12px; font-size:18px; color:#222; text-align:center; }
+.modal-panel .sub{ font-size:13px; color:var(--muted); text-align:center; margin-bottom:12px; }
+.input{ width:100%; box-sizing:border-box; padding:10px 12px; border-radius:8px; border:1px solid #dcdcdc; font-size:15px; margin-bottom:14px; outline:none; }
+.row{ display:flex; gap:10px; }
+.row .btn{ flex:1; padding:10px 12px; border-radius:8px; border:none; cursor:pointer; font-weight:700; }
+.btn.register{ background:var(--accent); color:white; }
+.btn.close{ background:#f0f0f0; color:#333; }
+
+.occupant-list{ margin-bottom:12px; }
+.occupant-item{ background:#fafafa; border:1px solid #eee; padding:8px 10px; border-radius:8px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; font-size:14px; }
+.occupant-item button{ border:none; background:transparent; color:#c00; cursor:pointer; font-weight:700; }
+
+.stats-page{ display:none; max-width:1100px; margin:40px auto; background:white; border-radius:12px; padding:20px; box-shadow:0 6px 20px rgba(0,0,0,0.08); }
+.stats-page table{ width:100%; border-collapse:collapse; margin-top:16px; }
+.stats-page th, .stats-page td{ border:1px solid #ddd; padding:8px; text-align:left; }
+.stats-page th{ background:#f8f8f8; }
+.back-btn{ margin-top:20px; background:#333; color:white; border:none; padding:10px 14px; border-radius:8px; cursor:pointer; }
+@media (max-width:980px){ .sections-wrap{ grid-template-columns:1fr; } }
+
+.modal-panel{max-height:85vh;overflow:auto}.vendor-wrap{max-width:1300px;margin:20px auto;padding:18px;background:white;border-radius:12px;overflow:auto}.vendor-wrap table{width:100%;border-collapse:collapse}.vendor-wrap th,.vendor-wrap td{border:1px solid #ddd;padding:8px;white-space:nowrap}.vendor-wrap input{min-width:120px;width:95%;padding:6px;box-sizing:border-box}.notice{max-width:1100px;margin:12px auto;padding:12px 16px;background:#fff8e7;border-radius:8px;font-size:13px}.controls .right{display:flex;flex-wrap:wrap;gap:6px}.admin-only{display:none}.room-card.locked{cursor:pointer}.input-label{font-size:13px;display:block;margin-bottom:4px}button:disabled{opacity:.5;cursor:not-allowed}
+
+.sections-wrap{max-width:1700px;grid-template-columns:minmax(0,1fr) minmax(460px,620px);align-items:start;gap:20px}.room-column{min-width:0}.room-grid{grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}.hotel-sidebar{background:white;border-radius:12px;padding:16px;position:sticky;top:90px;box-shadow:0 6px 18px #0000000a;min-width:0}.hotel-sidebar h2{font-size:19px;color:var(--accent);margin:0 0 12px}.hotel-scroll{max-height:72vh;overflow:auto}.hotel-table{width:100%;border-collapse:collapse;font-size:13px}.hotel-table th,.hotel-table td{border:1px solid #ddd;padding:9px;text-align:left;overflow-wrap:anywhere}.hotel-table th{background:#f8f8f8;position:sticky;top:0;z-index:1}.sidebar-note{font-size:12px;color:#666}.room-card.room-full{border-color:#259366;background:#eefbf4;box-shadow:0 0 0 3px #25936620}.room-card.room-full::after{content:'ĐÃ ĐỦ NGƯỜI / FULL';display:block;background:#25825a;color:white;border-radius:6px;padding:5px;margin-top:9px;font-size:11px;font-weight:700}.room-card.room-mixed{border:2px solid #d00000!important;background:#fff0f0!important;box-shadow:0 0 0 4px #d0000025!important}.room-card.room-mixed::after{content:'⚠ NAM VÀ NỮ / MIXED GENDER · CẦN KIỂM TRA / CHECK';background:#c20000}.room-card.just-filled{animation:fullPop .7s ease 2}.room-status{font-size:12px;font-weight:700;margin-top:7px}.room-mixed .room-status{color:#c20000}@keyframes fullPop{0%,100%{transform:scale(1)}50%{transform:scale(1.035);box-shadow:0 0 0 6px #25936630}}@media(prefers-reduced-motion:reduce){.room-card.just-filled{animation:none}}@media(max-width:1100px){.sections-wrap{grid-template-columns:1fr}.hotel-sidebar{position:static}.hotel-scroll{max-height:600px}}@media(max-width:600px){header .left{position:static}header h1{font-size:17px}.controls{flex-wrap:wrap}.sections-wrap{padding:0 12px}.hotel-sidebar{padding:10px}.hotel-table{font-size:11px}.hotel-table th,.hotel-table td{padding:5px}}
+.section .header,.controls-inline{flex-wrap:wrap}.controls-inline{justify-content:flex-end}.hotel-table th{line-height:1.45}header h1{text-align:center;max-width:75%}.btn{white-space:normal}.ui-dlg{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px}.ui-dlg-box{background:#fff;border-radius:12px;padding:18px;width:440px;max-width:92%;box-shadow:0 12px 36px rgba(0,0,0,.2)}.ui-dlg-msg{white-space:pre-line;margin-bottom:14px;font-size:14px;line-height:1.5}.form-error{color:#c20000;font-size:13px;font-weight:600;margin-bottom:10px}</style>
+</head>
+<body>
+<header>
+<div class="left"><img alt="Company" src="c054929f-e7b4-4cf9-9ee4-0eb99611c227.png"/></div>
+<h1>Đăng ký phòng chuyến đi công ty / Company Trip Room Booking</h1>
+</header>
+<div class="controls" id="main-controls">
+<div class="stats" id="summaryLeft"><span id="totalInfo">Đang tải / Loading...</span></div>
+<div class="right">
+<button class="ghost" id="exportCsvBtn">Xuất CSV / Export CSV</button>
+<button class="ghost" id="statsBtn">Thống kê / Statistics</button><button class="ghost admin-only" id="vendorBtn">Danh sách cho đơn vị tour / Vendor list</button><button class="ghost admin-only" id="planBtn">Phương án 54 phòng / 54-room plan</button><button class="ghost admin-only" id="logoutBtn">Đăng xuất / Logout</button><button class="primary" id="openAdmin">Quản trị / Admin</button>
+</div>
+</div>
+<div class="notice" id="connectionStatus">Đang tải dữ liệu / Loading data…</div>
+<div class="notice">107 người: tối thiểu 54 phòng, mỗi phòng 2 giường; 53 phòng có 2 người và 1 phòng có 1 người. Giới tính phòng theo người đăng ký đầu tiên. Giữ nguyên đăng ký hiện có; admin có thể áp dụng phương án 54 phòng. / 107 participants: minimum 54 rooms with 2 beds each, 53 pairs + 1 person occupying a room alone. Room gender follows the first registration. Existing bookings are preserved; admin can apply the 54-room plan. <b>Bảo mật / Privacy:</b> Mật khẩu admin chỉ khóa giao diện. Không chia sẻ công khai bản xuất CSV có CCCD / ngày sinh. / The admin password is only a UI lock. Do not share CSV exports containing ID / birth dates publicly.</div>
+<div class="sections-wrap" id="main-page"><div class="room-column">
+<div class="section" id="section-twin">
+<div class="header">
+<h2>Phòng hai giường / Twin Rooms</h2>
+<div class="controls-inline">
+<button class="ghost admin-only" id="twin-remove">− Xóa phòng / Remove Room</button>
+</div>
+</div>
+<div class="room-grid" id="grid-twin"></div>
+</div>
+</div><aside class="hotel-sidebar"><h2>Thông tin đăng ký khách sạn / Hotel Registration Information</h2><div id="hotelSummary"></div><p class="sidebar-note" id="hotelPrivacy"></p><div class="hotel-scroll"><table class="hotel-table"><thead><tr><th>STT / No.</th><th>Họ và tên / Full name</th><th>Ngày/tháng/năm sinh / Date of birth (DD/MM/YYYY)</th><th>CCCD / Hộ chiếu (ID / Passport)</th></tr></thead><tbody id="hotelBody"></tbody></table></div></aside></div>
+<!-- Stats Page -->
+<div class="stats-page" id="stats-page">
+<h2>📊 Thống kê phòng / Room Statistics</h2>
+<div id="stats-summary"></div>
+<table id="stats-table">
+<thead><tr><th>Phòng / Room</th><th>Loại phòng / Type</th><th>Số người tối đa / Capacity</th><th>Người đăng ký / Occupant</th><th>Thời gian đăng ký / Registered Time</th></tr></thead>
+<tbody></tbody>
+</table>
+<button class="back-btn" onclick="backToMain()">← Về trang chính / Back to Main Page</button>
+</div>
+<!-- Modal -->
+<div aria-hidden="true" class="modal" id="modal">
+<div class="modal-panel">
+<h3 id="modalTitle">Phòng / Room</h3>
+<div class="sub" id="modalSub">Chi tiết / Details</div>
+<div class="occupant-list" id="occupantList"></div>
+<label class="input-label" for="nameInput">Họ và tên / Full name *</label><input autocomplete="off" class="input" id="nameInput" maxlength="150" placeholder="Nhập họ và tên / Enter your full name"/>
+<label class="input-label" for="genderInput">Giới tính / Gender *</label><select class="input" id="genderInput"><option value="">Chọn / Select</option><option value="male">Nam / Male</option><option value="female">Nữ / Female</option></select>
+<label class="input-label" for="emailInput">Email / Thư điện tử</label><input class="input" id="emailInput" maxlength="200" type="email"/>
+<label class="input-label" for="phoneInput">Số điện thoại / Phone</label><input class="input" id="phoneInput" maxlength="25" type="tel"/>
+<label class="input-label" for="cccdInput">CCCD / Hộ chiếu (ID / Passport)</label><input class="input" id="cccdInput" maxlength="30"/>
+<label class="input-label" for="dobInput">Ngày sinh (ngày/tháng/năm) / Date of birth (DD/MM/YYYY)</label><input autocomplete="bday" class="input" id="dobInput" inputmode="numeric" maxlength="10" placeholder="dd/mm/yyyy" type="text"/>
+<div class="sub">Bắt buộc nhập họ tên và giới tính để giữ chỗ. Admin có thể bổ sung thông tin cho đơn vị tour sau. Người dùng thường không thể sửa đăng ký đã lưu; chỗ thứ hai chỉ dành cho người cùng giới tính. / Name and gender are required to reserve a bed. Admin can complete vendor details later. Regular users cannot change saved registrations; the second bed remains available to the same gender.</div>
+<div class="form-error" id="formError" role="alert"></div>
+<div class="row">
+<button class="btn register" id="registerBtn">Đăng ký / Register</button>
+<button class="btn close" id="closeBtn">Đóng / Close</button>
+</div>
+</div>
+</div>
+<section class="vendor-wrap" id="vendorPage" style="display:none"><h2>Danh sách đăng ký thủ tục phòng / Vendor Registration</h2><p>Chỉ dành cho admin (khóa giao diện). Chỉnh sửa từng dòng rồi nhấn Lưu. Ô trống là thông tin chưa được cung cấp. / Admin only (UI lock). Edit a row then click Save. Blank fields mean information has not been provided.</p><button class="ghost" id="vendorExport">Xuất CSV cho đơn vị tour / Export vendor CSV</button><button class="ghost" id="vendorClose">Đóng / Close</button><div id="vendorSummary"></div><table><thead><tr><th>Phòng / Room</th><th>Họ và tên / Full name</th><th>Giới tính / Gender</th><th>Email / Thư điện tử</th><th>Số điện thoại / Phone</th><th>CCCD / Hộ chiếu (ID / Passport)</th><th>Ngày sinh (dd/mm/yyyy) / Date of birth</th><th>Thao tác / Action</th></tr></thead><tbody id="vendorBody"></tbody></table></section>
+<script>
+// ===== Ngày sinh dd/mm/yyyy (lưu nội bộ yyyy-mm-dd) / DOB DD/MM/YYYY =====
+function isoToDMY(v){const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(v||'');return m?`${m[3]}/${m[2]}/${m[1]}`:(v||'');}
+function dmyToIso(v){
+ v=(v||'').trim();if(!v)return '';
+ const m=/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})$/.exec(v);if(!m)return 'invalid';
+ const d=+m[1],mo=+m[2],y=+m[3];const dt=new Date(y,mo-1,d);
+ if(dt.getFullYear()!==y||dt.getMonth()!==mo-1||dt.getDate()!==d||y<1900)return 'invalid';
+ return `${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+}
+function maskDMY(el){el.addEventListener('input',()=>{const g=el.value.replace(/\D/g,'').slice(0,8);let o=g.slice(0,2);if(g.length>2)o+='/'+g.slice(2,4);if(g.length>4)o+='/'+g.slice(4);el.value=o;});}
+// ===== Hộp thoại trong trang / In-page dialogs =====
+function uiDialog(msg,{input=false,password=false,cancel=true}={}){
+ return new Promise(res=>{
+  const ov=document.createElement('div');ov.className='ui-dlg';
+  const box=document.createElement('div');box.className='ui-dlg-box';
+  const p=document.createElement('div');p.className='ui-dlg-msg';p.textContent=msg;box.appendChild(p);
+  let inp=null;if(input){inp=document.createElement('input');inp.className='input';inp.type=password?'password':'text';box.appendChild(inp);}
+  const row=document.createElement('div');row.className='row';
+  const ok=document.createElement('button');ok.className='btn register';ok.textContent='OK';
+  const no=document.createElement('button');no.className='btn close';no.textContent='Hủy / Cancel';
+  row.appendChild(ok);if(cancel)row.appendChild(no);box.appendChild(row);ov.appendChild(box);document.body.appendChild(ov);
+  const done=v=>{ov.remove();res(v);};
+  ok.onclick=()=>done(input?inp.value:true);no.onclick=()=>done(input?null:false);
+  (inp||ok).focus();
+  ov.addEventListener('keydown',e=>{if(e.key==='Enter')ok.click();if(e.key==='Escape'&&cancel)no.click();});
+ });
+}
+function uiAlert(m){return uiDialog(String(m),{cancel:false});}
+function uiConfirm(m){return uiDialog(String(m));}
+function uiPrompt(m,pw=false){return uiDialog(String(m),{input:true,password:pw});}
+
+
+const ADMIN_PASS='246800', TARGET=107;
+// ===== CẤU HÌNH LƯU TRỮ / STORAGE CONFIG =====
+// Link Web App của Google Apps Script (để trống = chỉ lưu trên trình duyệt này). / Apps Script Web App URL (empty = this browser only).
+const SHARED_API_URL='https://script.google.com/macros/s/AKfycbxyTihAPolITWgNpPrhOFejSnfGF7c_4rIVkHK3K_KgvsmPfWHf10-E3YehMZgaB095aw/exec';
+let rooms=[], currentRoomIndex=null, isAdmin=false, serverVersion=0, busy=false, editIndex=null;
+const LOCAL_KEY='company_trip_rooms_local_v5';
+const SHARED=!!SHARED_API_URL;
+const memStore={};
+const store={
+ get(k){try{return window.localStorage.getItem(k);}catch(e){return k in memStore?memStore[k]:null;}},
+ set(k,v){try{window.localStorage.setItem(k,v);}catch(e){memStore[k]=v;}},
+ remove(k){try{window.localStorage.removeItem(k);}catch(e){delete memStore[k];}}
+};
+function loadLocal(){try{return JSON.parse(store.get(LOCAL_KEY)||'null');}catch(e){return null;}}
+async function fetchShared(){
+ const r=await fetch(SHARED_API_URL+(SHARED_API_URL.includes('?')?'&':'?')+'t='+Date.now());
+ const d=await r.json();if(d.error)throw new Error(d.error);return {version:Number(d.version)||0,rooms:d.rooms};
+}
+async function pushShared(baseVersion,data){
+ const r=await fetch(SHARED_API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({baseVersion,rooms:data})});
+ return r.json();
+}
+async function refresh(){
+ if(busy||modal.classList.contains('open'))return;
+ try{
+  if(SHARED){const d=await fetchShared();serverVersion=d.version;rooms=normalize(d.rooms);status('Đã đồng bộ dữ liệu chung. / Shared data synced. ('+new Date().toLocaleTimeString()+')');}
+  else{rooms=normalize(loadLocal());status('⚠ Chế độ cục bộ: dữ liệu chỉ lưu trên trình duyệt này. / Local mode: data is saved in this browser only.');}
+  render();
+ }catch(e){status('Không tải được dữ liệu chung / Could not load shared data: '+e.message);}
+}
+const $=id=>document.getElementById(id);
+const modal=$('modal'), nameInput=$('nameInput'), registerBtn=$('registerBtn');
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const genderLabel=g=>g==='male'?'Nam / Male':g==='female'?'Nữ / Female':'Chưa có giới tính / Gender not provided';
+const displayRoomName=name=>/^Twin Room \d+$/.test(name)?'Phòng hai giường '+name.match(/\d+$/)[0]+' / '+name:name;
+const nowString=()=>new Date().toLocaleString();
+function normalize(raw){
+ const result=[];
+ Object.values(raw||{}).filter(Boolean).forEach(r=>{
+  const ps=Object.values(r.people||{}).filter(Boolean);
+  for(let i=0;i<Math.max(1,ps.length);i+=2)result.push({...r,name:`Twin Room ${result.length+1}`,type:'twin',max:2,people:ps.slice(i,i+2)});
+ });
+ while(result.length<54)result.push({name:`Twin Room ${result.length+1}`,type:'twin',max:2,people:[]});
+ return result;
+}
+const previousFull=new Set();let initialRender=true;
+function roomState(r){const gs=r.people.map(p=>p.gender);const mixed=gs.includes('male')&&gs.includes('female');const full=r.people.length>=2;return {mixed,full,label:mixed?'⚠ Phòng có nam và nữ / Mixed-gender room':full&&gs.every(g=>g==='male')?'Phòng nam / Male room':full&&gs.every(g=>g==='female')?'Phòng nữ / Female room':full?'Đủ người · Thiếu giới tính / Full · Gender missing':r.people.length?'Còn 1 chỗ / 1 bed available':'Phòng trống / Empty room'};}
+function renderHotelSummary(){
+ const ps=rooms.flatMap(r=>r.people);$('hotelSummary').textContent=`Đã đăng ký / Registered: ${ps.length}/107 người / people · Còn thiếu / Remaining: ${Math.max(0,107-ps.length)} người / people`;
+ $('hotelPrivacy').textContent=isAdmin?'Admin: hiển thị đầy đủ thông tin. Chỉnh sửa tại danh sách cho đơn vị tour hoặc trong phòng. / Admin: full details shown. Edit in Vendor list or in the room.':'Đăng nhập Admin để xem đầy đủ ngày sinh và CCCD / Hộ chiếu. / Log in as admin to view full birth dates and ID / Passport details.';
+ const body=$('hotelBody');body.replaceChildren();
+ for(let i=0;i<Math.max(107,ps.length);i++){
+  const p=ps[i],tr=document.createElement('tr');
+  const dob=p?.dob?p.dob.split('-').reverse().join('/'):'',id=p?.cccd||p?.passport||'';
+  [i+1,p?.name||'',isAdmin?dob:dob?'••/••/••••':'',isAdmin?id:id?'••••'+id.slice(-3):''].forEach(v=>{const td=document.createElement('td');td.textContent=v;tr.appendChild(td);});body.appendChild(tr);
+ }
+}
+
+function defaultRooms(){return Array.from({length:54},(_,i)=>({name:`Twin Room ${i+1}`,type:'twin',max:2,people:[]}));}
+function total(rs=rooms){return rs.reduce((s,r)=>s+r.people.length,0);}
+function validPerson(p){
+ if(!p.name.trim()||!['male','female'].includes(p.gender))return 'Vui lòng nhập họ tên và chọn giới tính. / Please enter name and gender.';
+ if(p.email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p.email))return 'Email không hợp lệ. / Invalid email.';
+ if(p.phone&&!/^\+?[\d ()-]{7,25}$/.test(p.phone))return 'Số điện thoại không hợp lệ. / Invalid phone number.';
+ if(p.cccd&&!/^(?:\d{9}|\d{12}|[A-Za-z][A-Za-z0-9 -]{4,29})$/.test(p.cccd))return 'Nhập CCCD 12 chữ số / CMND 9 chữ số hoặc hộ chiếu theo định dạng hỗ trợ (5–30 ký tự, bắt đầu bằng chữ cái). / Enter a 12-digit ID / 9-digit old ID or a supported passport format (5–30 characters, starting with a letter).';
+ if(p.dob&&(!/^\d{4}-\d{2}-\d{2}$/.test(p.dob)||isNaN(Date.parse(p.dob))||p.dob>[new Date().getFullYear(),String(new Date().getMonth()+1).padStart(2,'0'),String(new Date().getDate()).padStart(2,'0')].join('-')))return 'Ngày sinh không hợp lệ, nhập theo ngày/tháng/năm (vd: 08/06/1996). / Invalid date of birth, use DD/MM/YYYY (e.g. 08/06/1996).';
+ return '';
+}
+function roomError(r){
+ if(r.people.length>r.max)return 'Phòng vượt quá số người tối đa. / Room exceeds capacity.';
+ const gs=r.people.map(p=>p.gender);
+ if(r.people.length>1&&(gs.some(g=>!['male','female'].includes(g))||new Set(gs).size>1))return 'Người cùng phòng phải cùng giới tính. Vui lòng bổ sung giới tính còn thiếu trước. / Roommates must have the same gender. Complete missing gender first.';
+ return '';
+}
+function status(t){$('connectionStatus').textContent=t;}
+async function commit(mutator){
+ if(busy)return false;busy=true;registerBtn.disabled=true;
+ try{
+  if(!SHARED){
+   const next=normalize(loadLocal());const reason=mutator(next);if(reason){uiAlert(reason);return false;}
+   store.set(LOCAL_KEY,JSON.stringify(next));rooms=normalize(next);render();return true;
+  }
+  for(let attempt=0;attempt<3;attempt++){
+   const d=await fetchShared();const next=normalize(d.rooms);const reason=mutator(next);
+   if(reason){serverVersion=d.version;rooms=normalize(d.rooms);render();uiAlert(reason);return false;}
+   const res=await pushShared(d.version,next);
+   if(res.ok){serverVersion=res.version;rooms=normalize(res.rooms||next);render();status('Đã lưu. / Saved. ('+new Date().toLocaleTimeString()+')');return true;}
+   if(res.error!=='conflict')throw new Error(res.error||'unknown');
+  }
+  uiAlert('Nhiều người đang lưu cùng lúc. Vui lòng thử lại. / Many people are saving at once. Please try again.');return false;
+ }catch(e){status('Lưu thất bại / Save failed: '+e.message);uiAlert('Lưu thất bại. Thay đổi chưa được lưu. / Save failed. Changes were not saved: '+e.message);return false;}
+ finally{busy=false;registerBtn.disabled=false;}
+}
+function render(){
+ $('grid-twin').replaceChildren();
+ rooms.forEach((r,i)=>{
+  const state=roomState(r),full=state.full, genders=[...new Set(r.people.map(p=>p.gender).filter(Boolean))];
+  const card=document.createElement('div');card.className='room-card'+(full?' locked room-full':'')+(state.mixed?' room-mixed':'')+(!initialRender&&full&&!previousFull.has(r.name)?' just-filled':'');
+  card.innerHTML=`<div class="room-icon">🚪</div><div class="room-name">${esc(displayRoomName(r.name))}</div><div class="room-occupants">${r.people.length?r.people.map(p=>esc(p.name)+' <small>('+esc(genderLabel(p.gender))+')</small>').join('<br>'):'<i>Chưa có người đăng ký / No occupants</i>'}</div><div style="margin-top:8px;font-size:12px">${r.people.length}/${r.max} người / occupants · ${full?'🔒 Đã khóa / Locked':genders.length===1?esc(genderLabel(genders[0])):'Còn chỗ / Available'}${roomError(r)?'<br>⚠ Kiểm tra giới tính / số người / Check gender/capacity':''}</div>`;
+  const badge=document.createElement('div');badge.className='room-status';badge.textContent=state.label;card.appendChild(badge);card.onclick=()=>openModal(i);$('grid-twin').appendChild(card);
+ });
+ previousFull.clear();rooms.filter(r=>r.people.length>=2).forEach(r=>previousFull.add(r.name));if(rooms.length)initialRender=false;renderHotelSummary();
+ const n=total(), beds=rooms.reduce((s,r)=>s+r.max,0);
+ $('totalInfo').textContent=`Tổng / Total: ${rooms.length} phòng / rooms • ${n}/${TARGET} người / people • ${beds-n} chỗ trống / available beds`;
+ document.querySelectorAll('.admin-only').forEach(e=>e.style.display=isAdmin?'inline-block':'none');
+ $('openAdmin').textContent=isAdmin?'Quản trị / Admin ✓':'Quản trị / Admin';
+ if($('stats-page').style.display==='block')renderStatsTable();
+ if(isAdmin&&$('vendorPage').style.display!=='none'&&!$('vendorBody').contains(document.activeElement))renderVendor();
+}
+function openModal(i){$('formError').textContent='';
+ currentRoomIndex=i;editIndex=null;const r=rooms[i];
+ $('modalTitle').textContent=displayRoomName(r.name);$('modalSub').textContent=`Số người tối đa / Capacity: ${r.max} • Đã đăng ký / Registered: ${r.people.length} • ${r.people.length>=r.max?'Đã khóa / Locked':'Chỉ đăng ký cùng giới tính / Same-gender booking'}`;
+ ['name','gender','email','phone','cccd','dob'].forEach(k=>$(k+'Input').value='');
+ renderOccupants(r);registerBtn.textContent='Đăng ký / Register';registerBtn.style.display=r.people.length<r.max?'':'none';
+ modal.classList.add('open');modal.setAttribute('aria-hidden','false');
+}
+function closeModal(){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');currentRoomIndex=null;editIndex=null;}
+function renderOccupants(r){
+ $('occupantList').replaceChildren();
+ r.people.forEach((p,j)=>{
+  const row=document.createElement('div');row.className='occupant-item';const label=document.createElement('span');label.textContent=`${p.name} (${genderLabel(p.gender)}) 🔒`;row.appendChild(label);
+  if(isAdmin){
+   const edit=document.createElement('button');edit.textContent='Sửa / Edit';edit.onclick=()=>{editIndex=j;['name','gender','email','phone','cccd','dob'].forEach(k=>$(k+'Input').value=k==='dob'?isoToDMY(p.dob):(p[k]||(k==='cccd'?p.passport:'')||''));registerBtn.textContent='Lưu thay đổi / Save changes';registerBtn.style.display='';};row.appendChild(edit);
+   const del=document.createElement('button');del.textContent='Xóa / Remove';del.onclick=async()=>{if(!await uiConfirm('Xóa / Remove '+p.name+'?'))return;const i=currentRoomIndex;if(await commit(rs=>{rs[i].people.splice(j,1);}))openModal(i);};row.appendChild(del);
+  }$('occupantList').appendChild(row);
+ });
+}
+registerBtn.onclick=async()=>{
+ if(currentRoomIndex===null)return;
+ const i=currentRoomIndex,j=editIndex,p={};['name','gender','email','phone','cccd','dob'].forEach(k=>p[k]=$(k+'Input').value.trim());p.dob=dmyToIso(p.dob);
+ const error=validPerson(p);$('formError').textContent=error;if(error)return;
+ const ok=await commit(rs=>{
+  const r=rs[i];if(!r)return 'Phòng không còn tồn tại. / Room no longer exists.';
+  if(j!==null){if(!isAdmin)return 'Chỉ dành cho admin. / Admin only.';if(rs.some((x,xi)=>x.people.some((q,qi)=>(xi!==i||qi!==j)&&((p.email&&q.email?.toLowerCase()===p.email.toLowerCase())||(p.cccd&&q.cccd===p.cccd)))))return 'Trùng email hoặc CCCD / Hộ chiếu. / Duplicate email or ID / Passport.';p.time=r.people[j].time||nowString();r.people[j]=p;}
+  else{
+   if(total(rs)>=TARGET)return 'Đã đủ 107 người đăng ký. / All 107 participants are registered.';
+   if(r.people.length>=r.max)return 'Phòng đã khóa / đủ người. / Room is locked / full.';
+   if(r.people.some(q=>!q.gender))return 'Người đã đăng ký chưa có giới tính. Vui lòng nhờ admin bổ sung. / Existing occupant gender is missing. Ask admin to complete it.';
+   if(rs.some(x=>x.people.some(q=>(p.email&&q.email?.toLowerCase()===p.email.toLowerCase())||(p.cccd&&q.cccd===p.cccd))))return 'Email hoặc CCCD / Hộ chiếu đã được đăng ký. / Email or ID / Passport already registered.';
+   p.time=nowString();r.people.push(p);
+  }
+  return roomError(r);
+ });if(ok)closeModal();
+};
+$('closeBtn').onclick=closeModal;modal.onclick=e=>{if(e.target===modal)closeModal();};
+async function promptAdmin(){if(isAdmin)return showAdminMenu();if(await uiPrompt('Nhập mật khẩu admin / Enter admin password:',true)!==ADMIN_PASS)return uiAlert('Sai mật khẩu. / Wrong password.');isAdmin=true;render();showAdminMenu();}
+async function showAdminMenu(){const c=await uiPrompt('Quản trị / Admin Panel\n1 Thống kê / Statistics\n2 Xóa người theo tên / Delete person by name\n3 Xóa phòng theo tên / Delete room by name\n4 Đặt lại toàn bộ dữ liệu / Reset all data\n5 Xuất CSV / Export CSV\n6 Trang thống kê / Statistics page\n7 Danh sách cho đơn vị tour, sửa, lưu / Vendor list, edit, save\n8 Áp dụng phương án 54 phòng / Apply 54-room plan\n9 Đăng xuất / Logout');({'1':adminStats,'2':adminDeletePerson,'3':adminDeleteRoomByName,'4':adminReset,'5':exportCSV,'6':openStatsPage,'7':openVendor,'8':applyPlan,'9':logout}[c]||(()=>{}))();}
+function logout(){isAdmin=false;closeModal();$('vendorPage').style.display='none';$('vendorBody').replaceChildren();render();}
+$('openAdmin').onclick=promptAdmin;$('logoutBtn').onclick=logout;
+async function removeRoom(type){if(!isAdmin)return uiAlert('Chỉ dành cho admin. / Admin only.');const i=rooms.map(r=>r.type).lastIndexOf(type);if(i<0)return;if(await uiConfirm('Xóa phòng và người đăng ký / Remove room and its occupants: '+rooms[i].name+'?'))await commit(rs=>{rs.splice(i,1);});}
+$('twin-remove').onclick=()=>removeRoom('twin');
+async function adminDeletePerson(){if(!isAdmin)return;const n=await uiPrompt('Nhập chính xác họ tên cần xóa / Exact name to remove:');if(n&&await uiConfirm('Xóa tất cả đăng ký có họ tên này? / Remove all registrations with this name?'))await commit(rs=>{rs.forEach(r=>r.people=r.people.filter(p=>p.name!==n));});}
+async function adminDeleteRoomByName(){if(!isAdmin)return;const n=await uiPrompt('Nhập chính xác tên phòng / Exact room name:');if(n&&await uiConfirm('Xóa phòng và toàn bộ người đăng ký trong phòng? / Delete room and occupants?'))await commit(rs=>{const i=rs.findIndex(r=>r.name===n);if(i<0)return 'Không tìm thấy phòng. / Room not found.';rs.splice(i,1);});}
+async function adminReset(){if(isAdmin&&await uiConfirm('Xóa TẤT CẢ đăng ký và tạo lại 54 phòng hai giường trống? / Delete ALL bookings and reset to 54 empty twin rooms?'))await commit(rs=>{rs.splice(0,rs.length,...defaultRooms());});}
+async function applyPlan(){
+ if(!isAdmin)return;
+ if(!await uiConfirm('Xếp lại người đã đăng ký vào phòng hai giường cùng giới tính. Giữ nguyên họ tên và thông tin cho đơn vị tour; số phòng sẽ thay đổi. Tiếp tục? / Rearrange existing participants into same-gender twin rooms. Names and vendor details will be preserved; room assignments will change. Continue?'))return;
+ await commit(rs=>{
+  const ps=rs.flatMap(r=>r.people);if(ps.length>TARGET)return 'Có hơn 107 đăng ký. Vui lòng xử lý đăng ký trùng trước. / More than 107 registrations. Resolve duplicates first.';
+  if(ps.some(p=>!['male','female'].includes(p.gender)))return 'Vui lòng bổ sung giới tính cho tất cả người đã đăng ký tại danh sách cho đơn vị tour trước. / Complete gender for all existing participants in Vendor list first.';
+  const next=defaultRooms();let idx=0;
+  ['male','female'].forEach(g=>{const group=ps.filter(p=>p.gender===g);for(let k=0;k<group.length;k+=2)next[idx++].people=group.slice(k,k+2);});
+  rs.splice(0,rs.length,...next);
+ });
+}
+function adminStats(){uiAlert(`${rooms.length} phòng / rooms\n${total()}/${TARGET} người / people\n${rooms.filter(r=>r.people.length>=r.max).length} phòng đủ người / full rooms`);}
+function openStatsPage(){$('main-page').style.display='none';$('main-controls').style.display='none';$('stats-page').style.display='block';renderStatsTable();}
+function backToMain(){$('stats-page').style.display='none';$('main-page').style.display='grid';$('main-controls').style.display='flex';}
+function renderStatsTable(){
+ $('stats-summary').textContent=`${rooms.length} phòng / rooms • ${total()}/${TARGET} người / people`;
+ const body=document.querySelector('#stats-table tbody');body.replaceChildren();
+ rooms.forEach(r=>(r.people.length?r.people:[{}]).forEach(p=>{const tr=document.createElement('tr');[displayRoomName(r.name),'Hai giường / Twin',r.max,p.name||'-',p.time||'-'].forEach(v=>{const td=document.createElement('td');td.textContent=v;tr.appendChild(td);});body.appendChild(tr);}));
+}
+$('statsBtn').onclick=openStatsPage;
+function openVendor(){if(!isAdmin)return uiAlert('Chỉ dành cho admin. / Admin only.');$('vendorPage').style.display='block';renderVendor();$('vendorPage').scrollIntoView({behavior:'smooth'});}
+function renderVendor(){
+ if(!isAdmin)return;const body=$('vendorBody');body.replaceChildren();let incomplete=0;
+ rooms.forEach((r,i)=>r.people.forEach((p,j)=>{
+  if(['name','gender','email','phone','cccd','dob'].some(k=>!p[k]))incomplete++;
+  const tr=document.createElement('tr');const cell=document.createElement('td');cell.textContent=displayRoomName(r.name);tr.appendChild(cell);const inputs={};
+  ['name','gender','email','phone','cccd','dob'].forEach(k=>{
+   const td=document.createElement('td'),input=document.createElement(k==='gender'?'select':'input');
+   if(k==='gender'){[['','Chọn / Select'],['male','Nam'],['female','Nữ']].forEach(([v,t])=>{const o=document.createElement('option');o.value=v;o.textContent=t;input.appendChild(o);});}
+   else{input.type=k==='email'?'email':'text';if(k==='dob'){input.placeholder='dd/mm/yyyy';input.inputMode='numeric';input.maxLength=10;maskDMY(input);}}
+   input.value=k==='dob'?isoToDMY(p.dob):(p[k]||(k==='cccd'?p.passport:'')||'');input.setAttribute('aria-label',({name:'Họ tên / Full name',gender:'Giới tính / Gender',email:'Email / Thư điện tử',phone:'Điện thoại / Phone',cccd:'CCCD / Hộ chiếu / ID / Passport',dob:'Ngày sinh / Date of birth'}[k])+' '+p.name);inputs[k]=input;td.appendChild(input);tr.appendChild(td);
+  });
+  const td=document.createElement('td'),save=document.createElement('button');save.className='primary';save.textContent='Lưu / Save';save.onclick=async()=>{
+   if(!isAdmin)return;const updated={...p};Object.keys(inputs).forEach(k=>updated[k]=inputs[k].value.trim());updated.dob=dmyToIso(updated.dob);const err=validPerson(updated);if(err)return uiAlert(err);
+   save.disabled=true;const ok=await commit(rs=>{
+    if(!isAdmin)return 'Chỉ dành cho admin. / Admin only.';
+    if(rs.some((r2,i2)=>r2.people.some((q,j2)=>(i2!==i||j2!==j)&&((updated.email&&q.email?.toLowerCase()===updated.email.toLowerCase())||(updated.cccd&&q.cccd===updated.cccd)))))return 'Trùng email hoặc CCCD / Hộ chiếu. / Duplicate email or ID / Passport.';
+    rs[i].people[j]=updated;
+    // Allow admin to fill missing legacy genders one at a time, but never introduce mixed genders.
+    const gs=rs[i].people.map(q=>q.gender).filter(Boolean);if(new Set(gs).size>1)return 'Không được xếp chung nam và nữ. Vui lòng chuyển hoặc xóa một người trước. / Mixed genders are not allowed. Move/remove a participant first.';
+   });save.disabled=false;if(ok)renderVendor();
+  };td.appendChild(save);tr.appendChild(td);body.appendChild(tr);
+ }));$('vendorSummary').textContent=`${total()} người / participants • ${incomplete} hồ sơ chưa đủ thông tin / incomplete vendor records. Không điền sẵn hoặc tạo thông tin cá nhân. / No personal information is pre-filled or invented.`;
+}
+function csvCell(v){let s=String(v??'');if(/^[=+\-@\t\r]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"';}
+function exportCSV(){
+ if(!isAdmin)return uiAlert('Chỉ dành cho admin. / Admin only.');
+ const rows=[['Phòng / Room','Loại phòng / Type','Số người tối đa / Capacity','Họ và tên / Full name','Giới tính / Gender','Email / Thư điện tử','Số điện thoại / Phone','CCCD / Hộ chiếu (ID / Passport)','Ngày sinh (ngày/tháng/năm) / Date of birth (DD/MM/YYYY)','Thời gian đăng ký / Registered time']];
+ rooms.forEach(r=>(r.people.length?r.people:[{}]).forEach(p=>rows.push([displayRoomName(r.name),'Hai giường / Twin',r.max,p.name,p.gender?genderLabel(p.gender):'',p.email,p.phone,p.cccd||p.passport,p.dob?p.dob.split('-').reverse().join('/'):'',p.time])));
+ const blob=new Blob(['\ufeff'+rows.map(row=>row.map(csvCell).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8;'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='company_trip_vendor.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+$('exportCsvBtn').onclick=exportCSV;$('vendorExport').onclick=exportCSV;$('vendorBtn').onclick=openVendor;$('vendorClose').onclick=()=>{$('vendorPage').style.display='none';};$('planBtn').onclick=applyPlan;
+try{maskDMY($('dobInput'));}catch(e){}
+try{store.remove('rooms');}catch(e){}
+rooms=defaultRooms();
+try{render();}catch(e){console.error(e);}
+refresh().catch(e=>console.error(e));
+if(SHARED){setInterval(()=>{if(!document.hidden)refresh();},30000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh();});}
+</script>
+</body>
+</html>
