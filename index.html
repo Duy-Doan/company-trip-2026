@@ -373,5 +373,87 @@ try{render();}catch(e){console.error(e);}
 refresh().catch(e=>console.error(e));
 if(SHARED){setInterval(()=>{if(!document.hidden)refresh();},30000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh();});}
 </script>
+<!-- ===== BẮT ĐẦU: CỘT GHI CHÚ / START: NOTE COLUMN PATCH ===== -->
+<style>
+/* Chia lại độ rộng 5 cột / Rebalance 5 column widths */
+.hotel-table{table-layout:fixed;width:100%}
+.hotel-table th:nth-child(1),.hotel-table td:nth-child(1){width:9%;text-align:center}
+.hotel-table th:nth-child(2),.hotel-table td:nth-child(2){width:25%}
+.hotel-table th:nth-child(3),.hotel-table td:nth-child(3){width:20%}
+.hotel-table th:nth-child(4),.hotel-table td:nth-child(4){width:22%}
+.hotel-table th:nth-child(5),.hotel-table td:nth-child(5){width:24%}
+/* Tiêu đề xuống dòng theo từ / Wrap headers by word */
+.hotel-table th{overflow-wrap:break-word;word-break:normal;hyphens:auto;font-size:12px}
+.note-col{min-width:0}
+.note-cell{display:flex;gap:4px;align-items:center}
+.note-input{width:100%;min-width:0;padding:5px 6px;border:1px solid #cfd8e3;border-radius:6px;font-size:12px;background:#fffef5;box-sizing:border-box}
+.note-input:focus{outline:2px solid #ffd27a;border-color:#e0a800}
+.note-state{font-size:11px;white-space:nowrap;color:#25825a;min-width:12px}.note-state.err{color:#c20000}
+.note-tip{font-size:12px;color:#555;margin:0 0 8px}
+</style>
+<script>
+(function(){
+ // 1) Thêm tiêu đề cột + hướng dẫn / Add header + tip
+ var tr=document.querySelector('#hotelBody') && document.querySelector('#hotelBody').closest('table').querySelector('thead tr');
+ if(tr && !tr.querySelector('.note-col')){
+  var th=document.createElement('th');th.className='note-col';
+  th.textContent='Ghi chú (tự túc di chuyển, chiều đi & về) / Note (self-arranged transport, outbound & return)';
+  tr.appendChild(th);
+ }
+ var priv=document.getElementById('hotelPrivacy');
+ if(priv && !document.querySelector('.note-tip')){
+  var tip=document.createElement('p');tip.className='note-tip';
+  tip.innerHTML='✏️ Chỉ cột <b>Ghi chú</b> được chỉnh sửa: gõ rồi nhấn Enter hoặc bấm ra ngoài để lưu. Các cột khác chỉ để xem. / Only the <b>Note</b> column is editable: type, then press Enter or click outside to save. Other columns are read-only.';
+  priv.after(tip);
+ }
+ var NOTE_MAX=200;
+ function noteEditor(p){
+  var wrap=document.createElement('div');wrap.className='note-cell';
+  var inp=document.createElement('input');inp.type='text';inp.className='note-input';inp.maxLength=NOTE_MAX;
+  inp.placeholder='VD: Tự túc chiều đi & về / e.g. Self-arranged both ways';
+  inp.value=p.note||'';inp.setAttribute('aria-label','Ghi chú / Note '+(p.name||''));
+  var st=document.createElement('span');st.className='note-state';var saved=p.note||'';
+  async function save(){
+   var v=inp.value.trim().slice(0,NOTE_MAX);if(v===saved)return;
+   st.className='note-state';st.textContent='…';
+   var ok=await commit(function(rs){
+    for(var r of rs)for(var q of r.people)
+     if(q.name===p.name&&(q.time||'')===(p.time||'')){q.note=v;return '';}
+    return 'Không tìm thấy người đăng ký này (có thể vừa bị xóa). / Registrant not found (may have been removed).';
+   });
+   if(ok){saved=v;st.textContent='✓';setTimeout(function(){st.textContent='';},2500);}
+   else{inp.value=saved;st.className='note-state err';st.textContent='✗';}
+  }
+  inp.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();inp.blur();}if(e.key==='Escape'){inp.value=saved;inp.blur();}});
+  inp.addEventListener('blur',save);
+  wrap.appendChild(inp);wrap.appendChild(st);return wrap;
+ }
+ // 2) Vẽ bảng có cột ghi chú / Render table with note column
+ var origSummary=renderHotelSummary;
+ renderHotelSummary=function(){
+  var body=document.getElementById('hotelBody');
+  if(body.contains(document.activeElement))return; // đang gõ thì không vẽ lại / don't redraw while typing
+  origSummary();
+  var ps=rooms.flatMap(function(r){return r.people;});
+  Array.from(body.children).forEach(function(row,i){
+   var td=document.createElement('td');if(ps[i])td.appendChild(noteEditor(ps[i]));row.appendChild(td);
+  });
+ };
+ // 3) Giữ ghi chú khi admin sửa thông tin / Keep notes when admin edits a person
+ var origCommit=commit;
+ commit=function(mutator){
+  return origCommit(function(rs){
+   var notes={};rs.forEach(function(r){r.people.forEach(function(q){if(q.note)notes[q.name+'|'+(q.time||'')]=q.note;});});
+   var res=mutator(rs);
+   rs.forEach(function(r){r.people.forEach(function(q){var k=q.name+'|'+(q.time||'');if(q.note===undefined&&notes[k])q.note=notes[k];});});
+   return res;
+  });
+ };
+ try{render();}catch(e){console.error(e);}
+})();
+</script>
+<!-- ===== KẾT THÚC: CỘT GHI CHÚ / END: NOTE COLUMN PATCH ===== -->
+</body>
+</html>
 </body>
 </html>
