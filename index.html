@@ -453,7 +453,7 @@ if(SHARED){setInterval(()=>{if(!document.hidden)refresh();},30000);document.addE
 })();
 </script>
 <!-- ===== KẾT THÚC: CỘT GHI CHÚ / END: NOTE COLUMN PATCH ===== -->
-<!-- ===== BẮT ĐẦU: CHỈNH PHÒNG / XÓA PHÒNG / PHÒNG ĐƠN PAID (ADMIN) — START: ROOM ADMIN PATCH ===== -->
+<!-- ===== BẮT ĐẦU: THÊM PHÒNG / CHỈNH PHÒNG / XÓA PHÒNG / PHÒNG ĐƠN PAID (ADMIN) — START: ROOM ADMIN PATCH ===== -->
 <style>
 .room-card{position:relative}
 .room-card.room-paid{border:2px solid #c20000!important;background:#ffe3e3!important;box-shadow:0 0 0 4px #c2000030!important}
@@ -495,7 +495,7 @@ if(SHARED){setInterval(()=>{if(!document.hidden)refresh();},30000);document.addE
   const s=origState(r);if(!r.paid)return s;
   return {...s,mixed:false,full:r.people.length>=1,label:'🔴 Phòng đơn – PAID / Single room – PAID'};
  };
- const origDisplay=displayRoomName; // const – chỉ đọc, không gán lại / read only
+ const origDisplay=displayRoomName; // const – chỉ đọc / read only
  // 3) Tô đỏ + dấu PAID / Red highlight + PAID stamp
  const origRender=render;
  render=function(){
@@ -508,12 +508,38 @@ if(SHARED){setInterval(()=>{if(!document.hidden)refresh();},30000);document.addE
    if(!c.querySelector('.paid-stamp')){const s=document.createElement('div');s.className='paid-stamp';s.textContent='PAID';c.appendChild(s);}
   });
  };
- // 4) Công cụ admin trong cửa sổ phòng / Admin tools in room modal
- const panel=document.querySelector('#modal .modal-panel');
- const box=document.createElement('div');box.className='room-admin';box.id='roomAdmin';box.style.display='none';panel.appendChild(box);
  const adminOnly=()=>isAdmin?'':'Chỉ dành cho admin. / Admin only.';
  const findRoom=(rs,name)=>rs.findIndex(x=>x.name===name);
  function btn(text,cls,fn){const b=document.createElement('button');b.type='button';b.className='btn '+cls;b.textContent=text;b.onclick=fn;return b;}
+
+ // 4) NEW: Thêm phòng (admin) / Add room (admin)
+ async function addRoom(){
+  if(!isAdmin)return uiAlert('Chỉ dành cho admin. / Admin only.');
+  const nextFree=rs=>{let n=1;while(rs.some(x=>x.name==='Twin Room '+n))n++;return 'Twin Room '+n;};
+  const suggest=nextFree(rooms);
+  const v=await uiPrompt(`Nhập tên phòng mới (để trống = "${suggest}") / Enter new room name (blank = "${suggest}"):`);
+  if(v===null||v===undefined||v===false)return; // bấm Hủy / cancelled
+  const nn=String(v).trim();
+  if(await commit(rs=>{
+   if(adminOnly())return adminOnly();
+   if(rs.length>=200)return 'Đã đạt tối đa 200 phòng. / Maximum 200 rooms reached.';
+   const name=nn||nextFree(rs);
+   if(rs.some(x=>x.name===name))return 'Tên phòng đã tồn tại. / Room name already exists.';
+   rs.push({name,type:'twin',max:2,people:[]});
+  })){
+   const g=document.getElementById('grid-twin');if(g.lastElementChild)g.lastElementChild.scrollIntoView({behavior:'smooth',block:'center'});
+  }
+ }
+ const removeBtn=document.getElementById('twin-remove');
+ if(removeBtn&&!document.getElementById('twin-add')){
+  const add=document.createElement('button');add.className='ghost admin-only';add.id='twin-add';
+  add.textContent='＋ Thêm phòng / Add Room';add.style.display=isAdmin?'inline-block':'none';add.onclick=addRoom;
+  removeBtn.parentNode.insertBefore(add,removeBtn);
+ }
+
+ // 5) Công cụ admin trong cửa sổ phòng / Admin tools in room modal
+ const panel=document.querySelector('#modal .modal-panel');
+ const box=document.createElement('div');box.className='room-admin';box.id='roomAdmin';box.style.display='none';panel.appendChild(box);
  function renderRoomAdmin(i){
   box.replaceChildren();
   if(!isAdmin||i===null||i===undefined||!rooms[i]){box.style.display='none';return;}
