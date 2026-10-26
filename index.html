@@ -457,8 +457,7 @@ if(SHARED){setInterval(()=>{if(!document.hidden)refresh();},30000);document.addE
 <style>
 .room-card{position:relative}
 .room-card.room-paid{border:2px solid #c20000!important;background:#ffe3e3!important;box-shadow:0 0 0 4px #c2000030!important}
-.room-card.room-paid::after{content:'PHÒNG ĐƠN – ĐÃ THANH TOÁN / SINGLE ROOM – PAID'!important;background:#c20000!important;display:block;color:#fff;border-radius:6px;padding:5px;margin-top:9px;font-size:11px;font-weight:700}
-.room-card.room-paid .room-name,.room-card.room-paid .room-status{color:#c20000}
+.room-card.room-paid .room-name,.room-card.room-paid .room-status{color:#c20000;font-weight:700}
 .paid-stamp{position:absolute;top:8px;right:8px;background:#c20000;color:#fff;font-weight:800;font-size:12px;letter-spacing:1px;padding:3px 8px;border-radius:6px;transform:rotate(10deg);box-shadow:0 2px 6px #0003}
 .room-admin{border-top:1px dashed #ccc;margin-top:14px;padding-top:12px}
 .room-admin h4{margin:0 0 10px;color:var(--accent);font-size:14px}
@@ -471,46 +470,41 @@ if(SHARED){setInterval(()=>{if(!document.hidden)refresh();},30000);document.addE
 </style>
 <script>
 (function(){
- // 1) Giữ tên phòng ổn định + hỗ trợ phòng đơn PAID / Stable room names + PAID single support
+ try{
+ // 1) Giữ tên phòng + hỗ trợ phòng đơn PAID / Keep room names + PAID single support
  normalize=function(raw){
   const list=Object.values(raw||{}).filter(Boolean),result=[],used=new Set();
   const nextName=()=>{let n=1;while(used.has('Twin Room '+n))n++;return 'Twin Room '+n;};
   list.forEach(r=>{
-   const ps=Object.values(r.people||{}).filter(Boolean),firstMax=r.paid?1:2;
+   const ps=Object.values(r.people||{}).filter(Boolean);
    let i=0,first=true;
    do{
-    const size=first?firstMax:2,nm=String(r.name||'');
+    const size=(first&&r.paid)?1:2,nm=String(r.name||'');
     const name=(first&&nm&&!used.has(nm))?nm:nextName();used.add(name);
     const room={...r,name,type:'twin',max:size,people:ps.slice(i,i+size)};
-    if(!first){delete room.paid;}
-    if(!room.paid)delete room.paid;
+    if(!(first&&r.paid))delete room.paid;
     result.push(room);i+=size;first=false;
    }while(i<ps.length);
   });
-  if(!list.length)while(result.length<54)result.push({name:nextName(),type:'twin',max:2,people:[]}),used.add(result[result.length-1].name);
+  if(!list.length)while(result.length<54){const n=nextName();used.add(n);result.push({name:n,type:'twin',max:2,people:[]});}
   return result;
  };
  // 2) Trạng thái phòng đơn / Single room state
  const origState=roomState;
  roomState=function(r){
-  if(!r.paid)return origState(r);
-  const s=origState(r);
-  return {...s,mixed:false,full:r.people.length>=r.max,label:'🔴 Phòng đơn – PAID / Single room – PAID'};
+  const s=origState(r);if(!r.paid)return s;
+  return {...s,mixed:false,full:r.people.length>=1,label:'🔴 Phòng đơn – PAID / Single room – PAID'};
  };
- // Ghi PAID vào tên hiển thị (thống kê, vendor, CSV) / Show PAID in stats, vendor list, CSV
- const origDisplay=displayRoomName;
- displayRoomName=function(name){
-  const base=origDisplay(name);
-  return rooms.some(r=>r.name===name&&r.paid)?base+' · PAID (Phòng đơn / Single)':base;
- };
- // 3) Tô đỏ + dấu PAID trên thẻ phòng / Red highlight + PAID stamp
+ const origDisplay=displayRoomName; // const – chỉ đọc, không gán lại / read only
+ // 3) Tô đỏ + dấu PAID / Red highlight + PAID stamp
  const origRender=render;
  render=function(){
   origRender();
-  const cards=$('grid-twin').children;
+  const cards=document.getElementById('grid-twin').children;
   rooms.forEach((r,i)=>{
    const c=cards[i];if(!c||!r.paid)return;
    c.classList.add('room-paid');c.classList.remove('room-mixed');
+   const n=c.querySelector('.room-name');if(n&&!n.textContent.includes('PAID'))n.textContent+=' · PAID';
    if(!c.querySelector('.paid-stamp')){const s=document.createElement('div');s.className='paid-stamp';s.textContent='PAID';c.appendChild(s);}
   });
  };
@@ -519,13 +513,12 @@ if(SHARED){setInterval(()=>{if(!document.hidden)refresh();},30000);document.addE
  const box=document.createElement('div');box.className='room-admin';box.id='roomAdmin';box.style.display='none';panel.appendChild(box);
  const adminOnly=()=>isAdmin?'':'Chỉ dành cho admin. / Admin only.';
  const findRoom=(rs,name)=>rs.findIndex(x=>x.name===name);
- function btn(text,cls,fn){const b=document.createElement('button');b.className='btn '+cls;b.textContent=text;b.onclick=fn;return b;}
+ function btn(text,cls,fn){const b=document.createElement('button');b.type='button';b.className='btn '+cls;b.textContent=text;b.onclick=fn;return b;}
  function renderRoomAdmin(i){
   box.replaceChildren();
-  if(!isAdmin||i===null||!rooms[i]){box.style.display='none';return;}
+  if(!isAdmin||i===null||i===undefined||!rooms[i]){box.style.display='none';return;}
   box.style.display='block';const r=rooms[i],rn=r.name;
   const h=document.createElement('h4');h.textContent='🔧 Admin – Điều chỉnh phòng / Adjust room';box.appendChild(h);
-  // Đổi tên / Rename
   const lb=document.createElement('label');lb.className='input-label';lb.textContent='Tên phòng / Room name';box.appendChild(lb);
   const nameIn=document.createElement('input');nameIn.className='input';nameIn.maxLength=60;nameIn.value=r.name;box.appendChild(nameIn);
   const r1=document.createElement('div');r1.className='row';
@@ -534,10 +527,9 @@ if(SHARED){setInterval(()=>{if(!document.hidden)refresh();},30000);document.addE
    if(nn===rn)return;
    if(await commit(rs=>{if(adminOnly())return adminOnly();const k=findRoom(rs,rn);if(k<0)return 'Không tìm thấy phòng. / Room not found.';if(rs.some(x=>x.name===nn))return 'Tên phòng đã tồn tại. / Room name already exists.';rs[k].name=nn;}))openModal(findRoom(rooms,nn));
   }));box.appendChild(r1);
-  // Chuyển người / Move occupants
   if(r.people.length){
    const lb2=document.createElement('label');lb2.className='input-label';lb2.textContent='Chuyển người sang phòng khác / Move occupant to another room';box.appendChild(lb2);
-   r.people.forEach((p,j)=>{
+   r.people.forEach(p=>{
     const line=document.createElement('div');line.className='mv';
     const sp=document.createElement('span');sp.textContent=p.name;line.appendChild(sp);
     const sel=document.createElement('select');sel.innerHTML='<option value="">Chọn phòng / Select room</option>';
@@ -557,10 +549,9 @@ if(SHARED){setInterval(()=>{if(!document.hidden)refresh();},30000);document.addE
     box.appendChild(line);
    });
   }
-  // Phòng đơn PAID / Single PAID
   const r2=document.createElement('div');r2.className='row';
   r2.appendChild(r.paid
-   ?btn('↩ Bỏ phòng đơn PAID (về phòng 2 giường) / Remove PAID single (back to twin)','adm-unpaid',async()=>{
+   ?btn('↩ Bỏ phòng đơn PAID / Remove PAID single','adm-unpaid',async()=>{
      if(!await uiConfirm('Bỏ trạng thái phòng đơn PAID? / Remove PAID single status?'))return;
      if(await commit(rs=>{if(adminOnly())return adminOnly();const k=findRoom(rs,rn);if(k<0)return 'Không tìm thấy phòng. / Room not found.';delete rs[k].paid;rs[k].max=2;}))openModal(findRoom(rooms,rn));})
    :btn('💰 Đặt làm phòng đơn – PAID / Mark as single room – PAID','adm-paid',async()=>{
@@ -568,10 +559,9 @@ if(SHARED){setInterval(()=>{if(!document.hidden)refresh();},30000);document.addE
      if(!await uiConfirm('Đặt phòng này làm phòng đơn – PAID (tối đa 1 người)? / Mark this room as single – PAID (max 1 person)?'))return;
      if(await commit(rs=>{if(adminOnly())return adminOnly();const k=findRoom(rs,rn);if(k<0)return 'Không tìm thấy phòng. / Room not found.';if(rs[k].people.length>1)return 'Phòng đang có 2 người. / Room has 2 occupants.';rs[k].paid=true;rs[k].max=1;}))openModal(findRoom(rooms,rn));}));
   box.appendChild(r2);
-  // Xóa phòng / Delete room
   const r3=document.createElement('div');r3.className='row';
   r3.appendChild(btn('🗑 Xóa phòng này / Delete this room','adm-del',async()=>{
-   const warn=r.people.length?`\n⚠ ${r.people.length} người trong phòng cũng sẽ bị xóa / occupant(s) will also be removed: ${r.people.map(p=>p.name).join(', ')}\nNên chuyển người sang phòng khác trước. / Consider moving them first.`:'';
+   const warn=r.people.length?`\n⚠ ${r.people.length} người trong phòng cũng sẽ bị xóa / occupant(s) will also be removed: ${r.people.map(p=>p.name).join(', ')}`:'';
    if(!await uiConfirm(`Xóa / Delete ${origDisplay(rn)}?${warn}`))return;
    if(await commit(rs=>{if(adminOnly())return adminOnly();const k=findRoom(rs,rn);if(k<0)return 'Không tìm thấy phòng. / Room not found.';rs.splice(k,1);}))closeModal();
   }));
@@ -581,8 +571,9 @@ if(SHARED){setInterval(()=>{if(!document.hidden)refresh();},30000);document.addE
  openModal=function(i){if(i<0)return closeModal();origOpen(i);renderRoomAdmin(i);};
  const origClose=closeModal;
  closeModal=function(){origClose();box.replaceChildren();box.style.display='none';};
- $('closeBtn').onclick=closeModal;
- try{render();}catch(e){console.error(e);}
+ document.getElementById('closeBtn').onclick=closeModal;
+ render();
+ }catch(e){console.error('ROOM ADMIN PATCH error:',e);}
 })();
 </script>
 <!-- ===== KẾT THÚC: ROOM ADMIN PATCH / END: ROOM ADMIN PATCH ===== -->
