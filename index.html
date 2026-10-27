@@ -603,6 +603,63 @@ if(SHARED){setInterval(()=>{if(!document.hidden)refresh();},30000);document.addE
 })();
 </script>
 <!-- ===== KẾT THÚC: ROOM ADMIN PATCH / END: ROOM ADMIN PATCH ===== -->
+<!-- ===== BẮT ĐẦU: CỘT GHI CHÚ TRONG DANH SÁCH ĐƠN VỊ TOUR / START: VENDOR NOTE COLUMN PATCH ===== -->
+<style>
+.vendor-wrap td.vendor-note-td{white-space:normal}
+.vendor-wrap input.vendor-note-input{min-width:240px;background:#fffef5;border:1px solid #cfd8e3;border-radius:6px}
+.vendor-wrap input.vendor-note-input:focus{outline:2px solid #ffd27a;border-color:#e0a800}
+</style>
+<script>
+(function(){
+ try{
+ var NOTE_LABEL='Ghi chú (tự túc di chuyển, chiều đi & về) / Note (self-arranged transport, outbound & return)';
+ // 1) Thêm tiêu đề cột Ghi chú trước cột Thao tác / Add Note header before Action column
+ var vhead=document.querySelector('#vendorPage thead tr');
+ if(vhead&&!vhead.querySelector('.vendor-note-th')){
+  var th=document.createElement('th');th.className='vendor-note-th';th.textContent=NOTE_LABEL;
+  vhead.insertBefore(th,vhead.lastElementChild);
+ }
+ // 2) Thêm ô Ghi chú vào từng dòng (đồng bộ với bảng thông tin đăng ký khách sạn) / Add note cell per row (synced with hotel table)
+ var origVendor=renderVendor;
+ renderVendor=function(){
+  origVendor();
+  if(!isAdmin)return;
+  var ps=rooms.flatMap(function(r){return r.people;});
+  Array.from(document.getElementById('vendorBody').children).forEach(function(tr,k){
+   var p=ps[k];if(!p||tr.querySelector('.vendor-note-td'))return;
+   var actionTd=tr.lastElementChild,save=actionTd&&actionTd.querySelector('button');
+   var td=document.createElement('td');td.className='vendor-note-td';
+   var inp=document.createElement('input');inp.type='text';inp.className='vendor-note-input';inp.maxLength=200;
+   inp.placeholder='VD: Tự túc chiều đi & về / e.g. Self-arranged both ways';
+   inp.value=p.note||'';inp.setAttribute('aria-label','Ghi chú / Note '+(p.name||''));
+   inp.addEventListener('keydown',function(e){if(e.key==='Enter'&&save){e.preventDefault();save.click();}});
+   td.appendChild(inp);tr.insertBefore(td,actionTd);
+   // Nút Lưu của dòng sẽ lưu luôn Ghi chú / Row Save button also saves the note
+   if(save){
+    var origClick=save.onclick;
+    save.onclick=async function(){
+     var prev=p.note;p.note=inp.value.trim().slice(0,200);
+     try{await origClick.apply(this,arguments);}catch(e){p.note=prev;throw e;}
+    };
+   }
+  });
+ };
+ // 3) Thêm cột Ghi chú vào file CSV / Add Note column to CSV export
+ exportCSV=function(){
+  if(!isAdmin)return uiAlert('Chỉ dành cho admin. / Admin only.');
+  var rows=[['Phòng / Room','Loại phòng / Type','Số người tối đa / Capacity','Họ và tên / Full name','Giới tính / Gender','Email / Thư điện tử','Số điện thoại / Phone','CCCD / Hộ chiếu (ID / Passport)','Ngày sinh (ngày/tháng/năm) / Date of birth (DD/MM/YYYY)',NOTE_LABEL,'Thời gian đăng ký / Registered time']];
+  rooms.forEach(function(r){(r.people.length?r.people:[{}]).forEach(function(p){rows.push([displayRoomName(r.name),r.paid?'Phòng đơn – PAID / Single – PAID':'Hai giường / Twin',r.max,p.name,p.gender?genderLabel(p.gender):'',p.email,p.phone,p.cccd||p.passport,p.dob?p.dob.split('-').reverse().join('/'):'',p.note||'',p.time]);});});
+  var blob=new Blob(['\ufeff'+rows.map(function(row){return row.map(csvCell).join(',');}).join('\r\n')],{type:'text/csv;charset=utf-8;'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download='company_trip_vendor.csv';a.click();setTimeout(function(){URL.revokeObjectURL(url);},1000);
+ };
+ document.getElementById('exportCsvBtn').onclick=exportCSV;
+ document.getElementById('vendorExport').onclick=exportCSV;
+ if(isAdmin&&document.getElementById('vendorPage').style.display!=='none')renderVendor();
+ }catch(e){console.error('VENDOR NOTE PATCH error:',e);}
+})();
+</script>
+<!-- ===== KẾT THÚC: CỘT GHI CHÚ TRONG DANH SÁCH ĐƠN VỊ TOUR / END: VENDOR NOTE COLUMN PATCH ===== -->
+
 
 </body>
 </html>
